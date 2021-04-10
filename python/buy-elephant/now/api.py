@@ -70,6 +70,7 @@ def handle_dialog(req, res):
         res['response']['text'] = f'{sessionStorage[user_id]["product"].capitalize()}а ' \
                                   f'можно найти на Яндекс.Маркете!'
         sessionStorage[user_id]["product"] = 'кролик'
+        sessionStorage[user_id]['suggests'] = ["Не хочу.", "Не буду.", "Отстань!"]
         return
 
     # Если нет, то убеждаем его купить слона!
