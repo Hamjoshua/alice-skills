@@ -45,15 +45,13 @@ def main():
 # Функция для непосредственной обработки диалога.
 def handle_dialog(req, res):
     user_id = req['session']['user_id']
-    sessionStorage[user_id] = {
-        'product': 'слон'
-    }
 
     if req['session']['new']:
         # Это новый пользователь.
         # Инициализируем сессию и поприветствуем его.
 
-        sessionStorage[user_id]['suggests'] = ["Не хочу.", "Не буду.", "Отстань!"]
+        sessionStorage[user_id] = {'suggests': ["Не хочу.", "Не буду.", "Отстань!"]}
+        sessionStorage[user_id]['product'] = 'слон'
 
         res['response']['text'] = f'Привет! Купи {sessionStorage[user_id]["product"]}а!'
         res['response']['buttons'] = get_suggests(user_id)
