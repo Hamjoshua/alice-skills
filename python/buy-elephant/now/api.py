@@ -51,9 +51,9 @@ def handle_dialog(req, res):
         # Инициализируем сессию и поприветствуем его.
 
         sessionStorage[user_id] = {'suggests': ["Не хочу.", "Не буду.", "Отстань!"]}
-        sessionStorage[user_id]['product'] = 'слон'
+        sessionStorage[user_id]['product'] = 'слоник'
 
-        res['response']['text'] = f'Привет! Купи {sessionStorage[user_id]["product"]}а!'
+        res['response']['text'] = 'Привет! Купи %sа!' % sessionStorage[user_id]["product"]
         res['response']['buttons'] = get_suggests(user_id)
         return
 
@@ -65,9 +65,12 @@ def handle_dialog(req, res):
         'хорошо',
     ]:
         # Пользователь согласился, прощаемся.
-        res['response']['text'] = f'{sessionStorage[user_id]["product"].capitalize()}а ' \
-                                  f'можно найти на Яндекс.Маркете!'
-        sessionStorage[user_id]["product"] = 'кролик'
+        res['response']['text'] = '%sа можно найти на Яндекс.Маркете!'\
+                                  % sessionStorage[user_id]["product"].capitalize()
+        if sessionStorage[user_id]["product"] == 'кролик':
+            sessionStorage[user_id]["product"] = 'слоник'
+        else:
+            sessionStorage[user_id]["product"] = 'кролик'
         sessionStorage[user_id]['suggests'] = ["Не хочу.", "Не буду.", "Отстань!"]
         return
 
