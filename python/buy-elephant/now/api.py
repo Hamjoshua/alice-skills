@@ -76,7 +76,7 @@ def handle_dialog(req, res):
 
     # Если нет, то убеждаем его купить слона!
     res['response']['text'] = 'Все говорят "%s", а ты купи %sа!' % (
-        req['request']['original_utterance'], {sessionStorage[user_id]["product"]}
+        req['request']['original_utterance'], sessionStorage[user_id]["product"]
     )
     res['response']['buttons'] = get_suggests(user_id)
 
