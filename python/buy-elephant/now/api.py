@@ -8,19 +8,19 @@ import logging
 
 # Импортируем подмодули Flask для запуска веб-сервиса.
 from flask import Flask, request
-app = Flask(__name__)
 
+app = Flask(__name__)
 
 logging.basicConfig(level=logging.DEBUG)
 
 # Хранилище данных о сессиях.
 sessionStorage = {}
 
+
 # Задаем параметры приложения Flask.
 @app.route("/", methods=['POST'])
-
 def main():
-# Функция получает тело запроса и возвращает ответ.
+    # Функция получает тело запроса и возвращает ответ.
     logging.info('Request: %r', request.json)
 
     response = {
@@ -41,6 +41,7 @@ def main():
         indent=2
     )
 
+
 # Функция для непосредственной обработки диалога.
 def handle_dialog(req, res):
     user_id = req['session']['user_id']
@@ -54,10 +55,11 @@ def handle_dialog(req, res):
                 "Не хочу.",
                 "Не буду.",
                 "Отстань!",
-            ]
+            ],
+            'product': 'слон'
         }
 
-        res['response']['text'] = 'Привет! Купи слона!'
+        res['response']['text'] = f'Привет! Купи {sessionStorage[user_id]["product"]}а!'
         res['response']['buttons'] = get_suggests(user_id)
         return
 
@@ -69,14 +71,17 @@ def handle_dialog(req, res):
         'хорошо',
     ]:
         # Пользователь согласился, прощаемся.
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
+        res['response']['text'] = f'{sessionStorage[user_id]["product"].capitalize()}а ' \
+                                  f'можно найти на Яндекс.Маркете!'
+        sessionStorage[user_id]["product"] = 'кролик'
         return
 
     # Если нет, то убеждаем его купить слона!
-    res['response']['text'] = 'Все говорят "%s", а ты купи слона!' % (
-        req['request']['original_utterance']
+    res['response']['text'] = 'Все говорят "%s", а ты купи %sа!' % (
+        req['request']['original_utterance'], {sessionStorage[user_id]["product"]}
     )
     res['response']['buttons'] = get_suggests(user_id)
+
 
 # Функция возвращает две подсказки для ответа.
 def get_suggests(user_id):
@@ -97,7 +102,7 @@ def get_suggests(user_id):
     if len(suggests) < 2:
         suggests.append({
             "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=слон",
+            "url": f"https://market.yandex.ru/search?text={session['product']}",
             "hide": True
         })
 
