@@ -77,7 +77,7 @@ def handle_dialog(req, res):
         # Если же нашли, то категорически его приветствуем
         else:
             res['response']['text'] = 'Рада знакомству, %s. Я - Алиса.' \
-                                      ' Какой город хочешь увидеть?', first_name.title()
+                                      ' Какой город хочешь увидеть?' % first_name.title()
             sessionStorage[user_id]['first_name'] = first_name
             res['response']['buttons'] = [{
                 'title': city.title(),
