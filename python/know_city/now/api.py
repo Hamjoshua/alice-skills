@@ -81,7 +81,7 @@ def handle_dialog(req, res):
                 {'title': "Да", 'hide': True},
                 {'title': 'Нет', 'hide': True}]
 
-    elif sessionStorage[user_id]['game'] is None:
+    elif sessionStorage[user_id].get('game', None) is None:
         # Проверяем на Да/Нет
         if req['request']['command'] is 'да':
             sessionStorage[user_id]['game'] = True
