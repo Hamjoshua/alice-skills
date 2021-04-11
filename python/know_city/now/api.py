@@ -78,8 +78,8 @@ def handle_dialog(req, res):
                                       ' Отгадаете город по фото?' % first_name.title()
             sessionStorage[user_id]['first_name'] = first_name
             res['response']['buttons'] = [
-                {'title': "Да", 'hide': False},
-                {'title': 'Нет', 'hide': False}]
+                {'title': "Да", 'hide': True},
+                {'title': 'Нет', 'hide': True}]
 
     elif sessionStorage[user_id].get('game', None) is None:
         # Проверяем на Да/Нет
@@ -98,6 +98,7 @@ def handle_dialog(req, res):
                     'title': 'Что за город?',
                     'image_id': cities[city]
                 }
+                res['response']['text'] = 'Что за город?'
         elif req['request']['command'] == 'нет':
             sessionStorage[user_id]['game'] = False
             res['response']['text'] = 'Заходите ко мне еще. Хорошего дня!'
@@ -121,6 +122,20 @@ def handle_dialog(req, res):
         res['response']['buttons'] = [
             {'title': "Да", 'hide': True},
             {'title': 'Нет', 'hide': True}]
+    else:
+        if len(cities) == len(sessionStorage[user_id]['cities']):
+            res['response']['text'] = "Боюсь, что города закончились." \
+                                      " Приходите завтра, может, завезут ;)."
+        else:
+            if req['request']['command'] == 'угадай город':
+                sessionStorage[user_id]['game'] = None
+                res['response']['text'] = 'Точно?'
+                res['response']['buttons'] = [
+                    {'title': "Да", 'hide': True},
+                    {'title': 'Нет', 'hide': True}]
+            else:
+                res['response']['text'] = 'Вы закончили игру, но вы можете ее начать' \
+                                          ' с помощью команды "Угадай город"'
 
 
 # Функция проверяет, точно ли юзер вписал имя
