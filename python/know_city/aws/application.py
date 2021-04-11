@@ -8,19 +8,30 @@ import logging
 
 # Импортируем подмодули Flask для запуска веб-сервиса.
 from flask import Flask, request
-application = Flask(__name__)
 
+# Импортируем random для случайного выбора картинки города
+import random
+
+app = Flask(__name__)
 
 logging.basicConfig(level=logging.DEBUG)
+
+# словарь "имя города: массив с id картинок"
+
+cities = {
+    'москва': ['213044/069bf0697051269a0cb2', '1521359/519882f5ee15f2416760'],
+    'нью-йорк': ['937455/47a0d453b991b0d10aff', '937455/6a1d6b72971931e0895c'],
+    'париж': ['1521359/f9897122bfcf76f44051', '1540737/f92af27646c777d0c841']
+}
 
 # Хранилище данных о сессиях.
 sessionStorage = {}
 
-# Задаем параметры приложения Flask.
-@application.route("/", methods=['POST'])
 
+# Задаем параметры приложения Flask.
+@app.route("/post", methods=['POST'])
 def main():
-# Функция получает тело запроса и возвращает ответ.
+    # Функция получает тело запроса и возвращает ответ.
     logging.info('Request: %r', request.json)
 
     response = {
@@ -41,64 +52,71 @@ def main():
         indent=2
     )
 
+
 # Функция для непосредственной обработки диалога.
 def handle_dialog(req, res):
     user_id = req['session']['user_id']
 
+    # Если это новый пользователь, то просим его представиться
     if req['session']['new']:
-        # Это новый пользователь.
-        # Инициализируем сессию и поприветствуем его.
+        sessionStorage[user_id] = {'suggests': ["Не хочу.", "Не буду.", "Отстань!"]}
+        sessionStorage[user_id]['product'] = 'слоник'
 
+        res['response']['text'] = 'Привет! Назови свое имя.'
+        # Создает словарь, в который в будущем положим имя юзера
         sessionStorage[user_id] = {
-            'suggests': [
-                "Не хочу.",
-                "Не буду.",
-                "Отстань!",
-            ]
+            'first_name': None
         }
-
-        res['response']['text'] = 'Привет! Купи слона!'
-        res['response']['buttons'] = get_suggests(user_id)
         return
 
-    # Обрабатываем ответ пользователя.
-    if req['request']['original_utterance'].lower() in [
-        'ладно',
-        'куплю',
-        'покупаю',
-        'хорошо',
-    ]:
-        # Пользователь согласился, прощаемся.
-        res['response']['text'] = 'Слона можно найти на Яндекс.Маркете!'
-        return
+    # Если пользователь не новый, то обрабатываем его имя
+    if sessionStorage[user_id]['first_name'] is None:
+        # Ищем имя юзера в его последнем сообщении
+        first_name = get_first_name(req)
+        # Если не нашли, то просим его вписать имя снова
+        if first_name is None:
+            res['response']['text'] = 'Что? Не расслышала! Повтори, пожалуйста.'
+        # Если же нашли, то категорически его приветствуем
+        else:
+            res['response']['text'] = 'Рада знакомству, %s. Я - Алиса.' \
+                                      ' Какой город хочешь увидеть?', first_name.title()
+            sessionStorage[user_id]['first_name'] = first_name
+            res['response']['buttons'] = [{
+                'title': city.title(),
+                'hide': True
+            } for city in cities]
 
-    # Если нет, то убеждаем его купить слона!
-    res['response']['text'] = 'Все говорят "%s", а ты купи слона!' % (
-        req['request']['original_utterance']
-    )
-    res['response']['buttons'] = get_suggests(user_id)
+    # Если мы знакомы с юзером и он что-то написал, то обрабатываем его последнее сообщение
+    else:
+        # ищем город в сообщении от пользователя
+        city = get_city(req)
+        # если этот город есть в нашем списке, то показываем его юзеру из двух картинок
+        if city in cities:
+            res['response']['card'] = {
+                'type': 'BigImage',
+                'title': 'Этот город я знаю.',
+                'image_id': random.choice(cities[city])
+            }
+            res['response']['text'] = 'Я угадала!'
+        else:
+            res['response']['text'] = "Оу. Я никогда не слышала о таком. Попробуй еще раз!"
 
-# Функция возвращает две подсказки для ответа.
-def get_suggests(user_id):
-    session = sessionStorage[user_id]
 
-    # Выбираем две первые подсказки из массива.
-    suggests = [
-        {'title': suggest, 'hide': True}
-        for suggest in session['suggests'][:2]
-    ]
+# Функция проверяет, точно ли юзер вписал имя
+def get_first_name(req):
+    # Перебор сущностей
+    for entity in req['request']['nlu']['entities']:
+        # Находим сущность "YANDEX.FIO"
+        if entity['type'] == 'YANDEX.FIO':
+            # Если сущность с ключом "first_name"
+            # То возвращаем ее значение. В других случаях - None
+            return entity['value'].get('first_name', None)
 
-    # Убираем первую подсказку, чтобы подсказки менялись каждый раз.
-    session['suggests'] = session['suggests'][1:]
-    sessionStorage[user_id] = session
 
-    # Если осталась только одна подсказка, предлагаем подсказку
-    # со ссылкой на Яндекс.Маркет.
-    if len(suggests) < 2:
-        suggests.append({
-            "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=слон",
-            "hide": True
-        })
-
-    return suggests
+def get_city(req):
+    for entity in req['request']['nla']['entities']:
+        # Находим сущность "YANDEX.GEO"
+        if entity['type'] == 'YANDEX.GEO':
+            # Если сщуность с ключом "city"
+            # То возвращаем ее значение. В других случаях - None
+            return entity['value'].get('city', None)
