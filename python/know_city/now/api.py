@@ -57,14 +57,12 @@ def handle_dialog(req, res):
 
     # Если это новый пользователь, то просим его представиться
     if req['session']['new']:
-        sessionStorage[user_id] = {'suggests': ["Не хочу.", "Не буду.", "Отстань!"]}
-        sessionStorage[user_id]['product'] = 'слоник'
-
         res['response']['text'] = 'Привет! Назови свое имя.'
         # Создает словарь, в который в будущем положим имя юзера
         sessionStorage[user_id] = {
             'first_name': None
         }
+        sessionStorage[user_id]['cities'] = []
         return
 
     # Если пользователь не новый, то обрабатываем его имя
@@ -77,27 +75,52 @@ def handle_dialog(req, res):
         # Если же нашли, то категорически его приветствуем
         else:
             res['response']['text'] = 'Рада знакомству, %s. Я - Алиса.' \
-                                      ' Какой город хочешь увидеть?' % first_name.title()
+                                      ' Отгадаете город по фото?' % first_name.title()
             sessionStorage[user_id]['first_name'] = first_name
-            res['response']['buttons'] = [{
-                'title': city.title(),
-                'hide': True
-            } for city in cities]
+            res['response']['buttons'] = [
+                {'title': "Да", 'hide': True},
+                {'title': 'Нет', 'hide': True}]
+
+    elif sessionStorage[user_id]['game'] is None:
+        # Проверяем на Да/Нет
+        if req['request']['command'] is 'да':
+            sessionStorage[user_id]['game'] = True
+            for city in cities:
+                if city not in sessionStorage[user_id]['cities']:
+                    sessionStorage[user_id]['current_city'] = city
+                    break
+                if sessionStorage[user_id]['current_city'] is None:
+                    res['response']['text'] = "Боюсь, что города закончились." \
+                                              " Приходите завтра, может, завезут ;)."
+                    sessionStorage[user_id]['game'] = False
+                res['response']['card'] = {
+                    'type': 'BigImage',
+                    'title': 'Что за город?',
+                    'image_id': cities[city]
+                }
+        elif req['request']['command'] is 'нет':
+            sessionStorage[user_id]['game'] = False
+            res['response']['text'] = 'Заходите ко мне еще. Хорошего дня!'
+        else:
+            res['response']['text'] = 'Не поняла ответа. Так да или нет?'
 
     # Если мы знакомы с юзером и он что-то написал, то обрабатываем его последнее сообщение
-    else:
+    elif sessionStorage[user_id]['game'] is True:
         # ищем город в сообщении от пользователя
         city = get_city(req)
         # если этот город есть в нашем списке, то показываем его юзеру из двух картинок
         if city in cities:
-            res['response']['card'] = {
-                'type': 'BigImage',
-                'title': 'Этот город я знаю.',
-                'image_id': random.choice(cities[city])
-            }
-            res['response']['text'] = 'Я угадала!'
+            res['response']['text'] = "Верно! Сыграем еще?"
         else:
-            res['response']['text'] = "Оу. Я никогда не слышала о таком. Попробуй еще раз!"
+            res['response']['text'] = 'Вы пытались. Это "%s"! Сыграем еще?'\
+                                      % sessionStorage[user_id]['current_city']
+        sessionStorage[user_id]['cities'].append(sessionStorage[user_id]['current_city'])
+        # Поскольку игра закончилась, мы ставим ей None и даем юзеру выбор
+        sessionStorage[user_id]['game'] = None
+        sessionStorage[user_id]['current_city'] = None
+        res['response']['buttons'] = [
+            {'title': "Да", 'hide': True},
+            {'title': 'Нет', 'hide': True}]
 
 
 # Функция проверяет, точно ли юзер вписал имя
