@@ -78,12 +78,12 @@ def handle_dialog(req, res):
                                       ' Отгадаете город по фото?' % first_name.title()
             sessionStorage[user_id]['first_name'] = first_name
             res['response']['buttons'] = [
-                {'title': "Да", 'hide': True},
-                {'title': 'Нет', 'hide': True}]
+                {'title': "Да", 'hide': False},
+                {'title': 'Нет', 'hide': False}]
 
     elif sessionStorage[user_id].get('game', None) is None:
         # Проверяем на Да/Нет
-        if req['request']['command'] is 'да':
+        if req['request']['command'] == 'да':
             sessionStorage[user_id]['game'] = True
             for city in cities:
                 if city not in sessionStorage[user_id]['cities']:
@@ -98,7 +98,7 @@ def handle_dialog(req, res):
                     'title': 'Что за город?',
                     'image_id': cities[city]
                 }
-        elif req['request']['command'] is 'нет':
+        elif req['request']['command'] == 'нет':
             sessionStorage[user_id]['game'] = False
             res['response']['text'] = 'Заходите ко мне еще. Хорошего дня!'
         else:
