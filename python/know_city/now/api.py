@@ -112,7 +112,7 @@ def get_first_name(req):
 
 
 def get_city(req):
-    for entity in req['request']['nla']['entities']:
+    for entity in req['request']['nlu']['entities']:
         # Находим сущность "YANDEX.GEO"
         if entity['type'] == 'YANDEX.GEO':
             # Если сщуность с ключом "city"
